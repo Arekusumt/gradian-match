@@ -1,0 +1,35 @@
+from gradianmatch.resume_model import resume_from_dict
+from gradianmatch.scoring import OfferReqs
+from gradianmatch.applier.regenerate import regenerate
+
+CV = resume_from_dict({"basics": {"name": "Alex"},
+                       "skills": [{"name": "p", "keywords": ["Python", "SQL"]}]})
+OFFER = OfferReqs(title="Data Analyst", must_have_skills=["Python", "SQL", "Power BI"])
+
+class ScriptedClaude:
+    """Returns queued payloads in order; records prompts to know who was called."""
+    def __init__(self, payloads): self.payloads = list(payloads); self.prompts = []
+    def run_json(self, prompt, timeout=120):
+        self.prompts.append(prompt)
+        return self.payloads.pop(0)
+
+TAILORED = {"resume": {"basics": {"name": "Alex"},
+                       "skills": [{"name": "p", "keywords": ["Python", "SQL", "Power BI"]}]},
+            "ledger": [{"claim": "Power BI", "location": "skills", "why": "added for match", "grounded": False}]}
+
+def test_loop_stops_when_critic_passes():
+    claude = ScriptedClaude([TAILORED, {"score": 88, "dimensions": {}, "passed": True,
+                                        "hard_gate_violations": [], "feedback": []}])
+    res = regenerate(CV, OFFER, 80, claude, rubric_path=None)
+    assert res.critic_score == 88 and res.iterations == 1
+    assert any(item.claim == "Power BI" for item in res.ledger)
+
+def test_loop_retries_then_returns_best():
+    claude = ScriptedClaude([
+        TAILORED, {"score": 60, "dimensions": {}, "passed": False,
+                   "hard_gate_violations": [], "feedback": ["Quantify impact"]},
+        TAILORED, {"score": 90, "dimensions": {}, "passed": True,
+                   "hard_gate_violations": [], "feedback": []},
+    ])
+    res = regenerate(CV, OFFER, 80, claude, rubric_path=None)
+    assert res.iterations == 2 and res.critic_score == 90

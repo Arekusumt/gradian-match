@@ -1,0 +1,9 @@
+target_score: 85
+max_iterations: 3
+weights:
+  ats_coverage: 0.40      # keyword match vs offer
+  truthfulness: 0.30      # every added claim must be in the ledger (hard gate)
+  readability: 0.20       # recruiter-friendly, concrete, quantified
+  ats_parseable: 0.10     # clean structure, standard sections
+hard_gates:
+  - "Any claim not present in the source CV MUST appear in the ledger; otherwise fail."
