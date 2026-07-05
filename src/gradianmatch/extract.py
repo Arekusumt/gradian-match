@@ -1,5 +1,6 @@
 # src/gradianmatch/extract.py
 from __future__ import annotations
+import html
 import re
 from dataclasses import dataclass, field
 from typing import Callable
@@ -19,9 +20,10 @@ _TAG = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.DOTALL | re.IGNORECASE)
 _STRIP = re.compile(r"<[^>]+>")
 _WS = re.compile(r"\n{3,}")
 
-def _html_to_text(html: str) -> str:
-    html = _TAG.sub(" ", html)
-    text = _STRIP.sub("\n", html)
+def _html_to_text(markup: str) -> str:
+    markup = _TAG.sub(" ", markup)
+    text = _STRIP.sub("\n", markup)
+    text = html.unescape(text)
     text = re.sub(r"[ \t]+", " ", text)
     return _WS.sub("\n\n", text).strip()
 
@@ -48,10 +50,10 @@ def extract_url(url: str, fetcher: Callable[[str], str] | None = None) -> Extrac
                              headers={"User-Agent": "GradianMatch/0.1"})
             resp.raise_for_status()
             return resp.text
-    html = fetcher(url)
-    return ExtractResult(text=_html_to_text(html), meta={"source_url": url})
+    page = fetcher(url)
+    return ExtractResult(text=_html_to_text(page), meta={"source_url": url})
 
-def extract_text(source: str, kind: str, fetcher=None) -> ExtractResult:
+def extract_text(source: str, kind: str, fetcher: Callable[[str], str] | None = None) -> ExtractResult:
     if kind == "text":
         return extract_plaintext(source)
     if kind == "pdf":

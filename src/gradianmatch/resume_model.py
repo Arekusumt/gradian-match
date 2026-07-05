@@ -47,21 +47,28 @@ class Resume:
         return terms
 
 def _mk(cls, d: dict):
+    if not isinstance(d, dict):
+        return cls()
     fields = cls.__dataclass_fields__
-    return cls(**{k: v for k, v in d.items() if k in fields})
+    return cls(**{k: v for k, v in d.items() if k in fields and v is not None})
+
+def _list(cls, items) -> list:
+    return [_mk(cls, x) for x in (items or []) if isinstance(x, dict)]
 
 def resume_from_dict(d: dict) -> Resume:
     b = d.get("basics", {}) or {}
+    if not isinstance(b, dict):
+        b = {}
     basics = _mk(Basics, {k: v for k, v in b.items() if k != "profiles"})
-    basics.profiles = [_mk(Profile, p) for p in b.get("profiles", []) or []]
+    basics.profiles = _list(Profile, b.get("profiles"))
     return Resume(
         basics=basics,
-        work=[_mk(Work, w) for w in d.get("work", []) or []],
-        education=[_mk(Education, e) for e in d.get("education", []) or []],
-        skills=[_mk(Skill, s) for s in d.get("skills", []) or []],
-        projects=[_mk(Project, p) for p in d.get("projects", []) or []],
-        languages=[_mk(Language, l) for l in d.get("languages", []) or []],
-        certificates=[_mk(Certificate, c) for c in d.get("certificates", []) or []],
+        work=_list(Work, d.get("work")),
+        education=_list(Education, d.get("education")),
+        skills=_list(Skill, d.get("skills")),
+        projects=_list(Project, d.get("projects")),
+        languages=_list(Language, d.get("languages")),
+        certificates=_list(Certificate, d.get("certificates")),
     )
 
 def resume_to_dict(r: Resume) -> dict:

@@ -1,11 +1,12 @@
 # src/gradianmatch/skills_taxonomy.py
 from __future__ import annotations
 import json
+import unicodedata
 from pathlib import Path
 from gradianmatch import config
 
 def _norm(s: str) -> str:
-    return " ".join(s.lower().strip().split())
+    return unicodedata.normalize("NFC", " ".join(s.lower().strip().split()))
 
 class SkillTaxonomy:
     def __init__(self, path: Path | None = None):

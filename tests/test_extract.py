@@ -21,3 +21,8 @@ def test_url_uses_injected_fetcher():
     html = "<html><body><h1>Job</h1><p>SQL and Python</p><script>x</script></body></html>"
     r = extract_text("http://example.com", "url", fetcher=lambda u: html)
     assert "Python" in r.text and "<script>" not in r.text
+
+def test_url_decodes_html_entities():
+    html = "<p>Data &amp; Analytics with SQL &gt; Excel</p>"
+    r = extract_text("http://x", "url", fetcher=lambda u: html)
+    assert "Data & Analytics" in r.text and "&amp;" not in r.text
