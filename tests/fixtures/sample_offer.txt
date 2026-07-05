@@ -1,0 +1,4 @@
+Junior Data Analyst — Barcelona (hybrid)
+We seek a Junior Data Analyst with SQL, Python and Power BI.
+Requirements: 1+ year experience, English, data visualization.
+Nice to have: cloud (Azure), statistics background.

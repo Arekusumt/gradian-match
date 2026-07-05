@@ -1,0 +1,15 @@
+Alex Martí — Data & AI Analyst
+Reus, Catalonia · alex@example.com · github.com/Arekusumt
+
+Summary: Analyst orchestrating AI systems for local businesses.
+
+Experience
+Gradian — Founder / AI Systems (2025-2026)
+- Built an agentic content and outreach engine in Python (directed via AI).
+- Automated CRM follow-ups and PDF report generation.
+
+Education
+BSc Physics (in progress)
+
+Skills: Python, SQL basics, data analysis, R, prompt engineering, Git, Power BI (learning)
+Languages: Catalan (native), Spanish (native), English (fluent)
