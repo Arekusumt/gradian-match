@@ -33,3 +33,17 @@ def test_loop_retries_then_returns_best():
     ])
     res = regenerate(CV, OFFER, 80, claude, rubric_path=None)
     assert res.iterations == 2 and res.critic_score == 90
+
+def test_regenerate_survives_malformed_tailor():
+    claude = ScriptedClaude(["not a dict",
+                             {"score": 90, "passed": True, "hard_gate_violations": [], "feedback": []}])
+    res = regenerate(CV, OFFER, 50, claude, rubric_path=None)
+    assert res.iterations == 1 and res.critic_score == 90
+    assert res.resume.basics.name == ""  # non-dict tailor → empty resume, no crash
+
+def test_regenerate_coerces_nonnumeric_score():
+    tailored = {"resume": {"basics": {"name": "A"}}, "ledger": []}
+    critic = {"score": "high", "passed": False, "hard_gate_violations": [], "feedback": ["x"]}
+    claude = ScriptedClaude([tailored, critic, tailored, critic, tailored, critic])
+    res = regenerate(CV, OFFER, 50, claude, rubric_path=None)
+    assert res.critic_score == 0 and res.iterations == 3  # coerced, ran to max, no crash

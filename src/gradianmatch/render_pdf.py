@@ -6,7 +6,7 @@ from gradianmatch import config
 from gradianmatch.resume_model import Resume, resume_to_dict
 
 def render_html(resume: Resume) -> str:
-    tmpl = Template((config.DATA_DIR / "cv_template.html.j2").read_text(encoding="utf-8"))
+    tmpl = Template((config.DATA_DIR / "cv_template.html.j2").read_text(encoding="utf-8"), autoescape=True)
     return tmpl.render(**resume_to_dict(resume))
 
 def find_chrome() -> str | None:

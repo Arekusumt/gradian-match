@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json
+import json, re
 from dataclasses import dataclass, field
 from pathlib import Path
 import yaml
@@ -8,6 +8,12 @@ from gradianmatch.resume_model import Resume, resume_from_dict, resume_to_dict
 from gradianmatch.scoring import OfferReqs
 
 DEFAULT_RUBRIC = {"target_score": 85, "max_iterations": 3}
+
+def _as_int(v, default: int = 0) -> int:
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
 
 @dataclass
 class LedgerItem:
@@ -32,9 +38,10 @@ def _rubric(path):
 
 def _fill(template_name, **kw) -> str:
     t = (config.AGENTS_DIR / template_name).read_text(encoding="utf-8")
-    for k, v in kw.items():
-        t = t.replace(k, v)
-    return t
+    if not kw:
+        return t
+    pattern = re.compile("|".join(re.escape(k) for k in kw))
+    return pattern.sub(lambda m: kw[m.group(0)], t)
 
 def _offer_json(offer: OfferReqs) -> str:
     return json.dumps(offer.__dict__, ensure_ascii=False)
@@ -51,19 +58,28 @@ def regenerate(cv: Resume, offer: OfferReqs, aggressiveness: int, claude,
                         "<<<AGG>>>": str(aggressiveness),
                         "<<<FEEDBACK>>>": json.dumps(feedback, ensure_ascii=False)})
         tout = claude.run_json(tprompt)
-        tailored = resume_from_dict(tout.get("resume", {}))
-        ledger = [LedgerItem(**{**{"grounded": False}, **item}) for item in tout.get("ledger", [])]
+        if not isinstance(tout, dict):
+            tout = {}
+        tailored = resume_from_dict(tout.get("resume") or {})
+        ledger = []
+        for item in (tout.get("ledger") or []):
+            if isinstance(item, dict):
+                ledger.append(LedgerItem(
+                    claim=str(item.get("claim", "")), location=str(item.get("location", "")),
+                    why=str(item.get("why", "")), grounded=bool(item.get("grounded", False))))
 
         cprompt = _fill("critic.md", **{"<<<RUBRIC>>>": json.dumps(rub), "<<<OFFER>>>": _offer_json(offer),
                         "<<<CV>>>": cv_json, "<<<TAILORED>>>": json.dumps(resume_to_dict(tailored), ensure_ascii=False),
                         "<<<LEDGER>>>": json.dumps([l.__dict__ for l in ledger], ensure_ascii=False)})
         cout = claude.run_json(cprompt)
-        score = int(cout.get("score", 0) or 0)
+        if not isinstance(cout, dict):
+            cout = {}
+        score = _as_int(cout.get("score", 0))
         passed = bool(cout.get("passed", False)) and not cout.get("hard_gate_violations")
-        feedback = list(cout.get("feedback", [])) + list(cout.get("hard_gate_violations", []))
+        feedback = list(cout.get("feedback") or []) + list(cout.get("hard_gate_violations") or [])
 
         candidate = RegenResult(tailored, ledger, score, i, passed, feedback)
-        if best is None or score > best.critic_score:
+        if best is None or score >= best.critic_score:
             best = candidate
         if passed and score >= target:
             return candidate

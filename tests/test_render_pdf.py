@@ -17,3 +17,8 @@ def test_render_pdf_smoke(tmp_path):
     out = tmp_path / "cv.pdf"
     render_pdf(R, str(out))
     assert out.exists() and out.stat().st_size > 800
+
+def test_render_html_escapes_special_chars():
+    r = resume_from_dict({"basics": {"name": "R&D <lead>", "summary": "C++ & SQL"}})
+    html = render_html(r)
+    assert "R&amp;D" in html and "&lt;lead&gt;" in html and "C++ &amp; SQL" in html
