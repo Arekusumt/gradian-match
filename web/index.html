@@ -9,13 +9,18 @@
 
 <section id="applier" class="pane active">
   <div class="grid">
-    <label>Your CV<textarea id="cv" rows="10" placeholder="Paste your CV text…"></textarea></label>
-    <label>Job offer<textarea id="offer" rows="10" placeholder="Paste the offer text or a URL…"></textarea></label>
+    <label>Your CV
+      <textarea id="cv" rows="10" placeholder="Paste your CV text, or upload a PDF…"></textarea>
+      <input type="file" id="cv-file" accept=".pdf,.txt" class="file"></label>
+    <label>Job offer
+      <textarea id="offer" rows="10" placeholder="Paste the offer text or a URL, or upload a PDF…"></textarea>
+      <input type="file" id="offer-file" accept=".pdf,.txt" class="file"></label>
   </div>
   <div class="row">
     <button id="analyze" class="primary">Analyze compatibility</button>
     <span class="platforms">Job Finder:
       <span id="platforms"></span>
+      <input id="conditions" class="conditions" placeholder="extra filters (remote, city…)">
       <button id="find-jobs">Find matching offers</button></span>
   </div>
   <div id="report" class="card hidden"></div>

@@ -1,19 +1,23 @@
 # src/gradianmatch/server.py
 from __future__ import annotations
+import os, tempfile
 from dataclasses import asdict
 from functools import wraps
 
 import httpx
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
+from starlette.background import BackgroundTask
 from pydantic import BaseModel
 
 from gradianmatch import config
 from gradianmatch.claude_client import ClaudeClient, ClaudeError
 from gradianmatch.skills_taxonomy import SkillTaxonomy
 from gradianmatch.extract import extract_text
-from gradianmatch.resume_model import resume_to_dict
+from gradianmatch.render_pdf import render_pdf
+from gradianmatch.resume_model import resume_from_dict, resume_to_dict
 from gradianmatch.scoring import CompatibilityReport
 from gradianmatch.applier.analyst import analyze
 from gradianmatch.applier.regenerate import regenerate
@@ -77,6 +81,26 @@ def _guarded(fn):
     return wrapper
 
 
+# This app binds to localhost and is meant for the machine's own user. Reject any
+# request carrying a cross-origin Origin header so a malicious page in the user's
+# browser can't drive the local API on their behalf (CSRF-style abuse).
+_LOCAL_ORIGINS = ("http://127.0.0.1", "http://localhost")
+
+
+@app.middleware("http")
+async def _origin_guard(request, call_next):
+    origin = request.headers.get("origin")
+    if origin and not origin.startswith(_LOCAL_ORIGINS):
+        return JSONResponse({"error": "cross-origin request blocked"}, status_code=403)
+    return await call_next(request)
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_handler(request, exc):
+    # Normalize pydantic's verbose 422 body into our {"error": ...} contract.
+    return JSONResponse({"error": "Invalid request body."}, status_code=422)
+
+
 class Source(BaseModel):
     kind: str  # "text" | "url" | "pdf" (path)
     value: str
@@ -100,6 +124,10 @@ class JobsReq(BaseModel):
 
 
 def _text(src: Source) -> str:
+    # Allowlist: never let a JSON body hand us an arbitrary local file path to read.
+    # PDFs are uploaded through /api/upload (multipart), never as a client-supplied path.
+    if src.kind not in ("text", "url"):
+        raise ApiError(400, "Unsupported input kind here; upload PDFs via /api/upload.")
     return extract_text(src.value, src.kind).text
 
 
@@ -152,6 +180,43 @@ def api_verify(req: Source):
     text = _text(req)
     with _http() as http:
         return [r.__dict__ for r in verify_sources(text, http)]
+
+
+class PdfReq(BaseModel):
+    resume: dict
+
+
+@app.post("/api/pdf")
+@_guarded
+def api_pdf(req: PdfReq):
+    resume = resume_from_dict(req.resume)
+    fd, path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    render_pdf(resume, path)
+    return FileResponse(path, media_type="application/pdf", filename="gradian-match-cv.pdf",
+                        background=BackgroundTask(os.remove, path))
+
+
+@app.post("/api/upload")
+async def api_upload(file: UploadFile = File(...)):
+    # async, so it can't use the sync _guarded decorator — handles errors inline.
+    try:
+        data = await file.read()
+        is_pdf = (file.filename or "").lower().endswith(".pdf")
+        if is_pdf:
+            fd, path = tempfile.mkstemp(suffix=".pdf")
+            os.close(fd)
+            try:
+                with open(path, "wb") as f:
+                    f.write(data)
+                text = extract_text(path, "pdf").text
+            finally:
+                os.remove(path)
+        else:
+            text = data.decode("utf-8", errors="replace")
+        return {"text": text}
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"error": f"Upload failed: {e}"}, status_code=400)
 
 
 # static UI last so /api/* always wins the route match

@@ -57,3 +57,52 @@ def test_analyze_bad_url_returns_clean_error(monkeypatch):
                                      "offer": {"kind": "text", "value": "Need Python"}})
     assert r.status_code >= 400
     assert "error" in r.json()
+
+
+def test_regenerate_endpoint(monkeypatch):
+    c = make_client(monkeypatch)
+    r = c.post("/api/regenerate", json={"cv": {"kind": "text", "value": "Python"},
+               "offer": {"kind": "text", "value": "Need Python"}, "aggressiveness": 50})
+    assert r.status_code == 200
+    b = r.json()
+    assert "critic_score" in b and "iterations" in b and "resume" in b
+
+
+def test_jobs_endpoint_no_network(monkeypatch):
+    c = make_client(monkeypatch)
+    r = c.post("/api/jobs", json={"cv_text": "Python analyst", "conditions": "", "platform_ids": []})
+    assert r.status_code == 200 and r.json() == []
+
+
+def test_verify_endpoint_no_urls(monkeypatch):
+    c = make_client(monkeypatch)
+    r = c.post("/api/verify", json={"kind": "text", "value": "no links here"})
+    assert r.status_code == 200 and r.json() == []
+
+
+def test_pdf_kind_rejected_on_analyze(monkeypatch):
+    c = make_client(monkeypatch)
+    r = c.post("/api/analyze", json={"cv": {"kind": "pdf", "value": "C:/secret.pdf"},
+               "offer": {"kind": "text", "value": "x"}})
+    assert r.status_code == 400 and "error" in r.json()
+
+
+def test_origin_guard(monkeypatch):
+    c = make_client(monkeypatch)
+    assert c.get("/api/health", headers={"origin": "https://evil.example"}).status_code == 403
+    assert c.get("/api/health", headers={"origin": "http://127.0.0.1:8765"}).status_code == 200
+
+
+def test_upload_text_returns_extracted_text(monkeypatch):
+    c = make_client(monkeypatch)
+    r = c.post("/api/upload", files={"file": ("cv.txt", b"Python analyst", "text/plain")})
+    assert r.status_code == 200 and "Python" in r.json()["text"]
+
+
+def test_pdf_endpoint(monkeypatch):
+    from gradianmatch.render_pdf import find_chrome
+    if find_chrome() is None:
+        import pytest; pytest.skip("no chrome/edge")
+    c = make_client(monkeypatch)
+    r = c.post("/api/pdf", json={"resume": {"basics": {"name": "Alex"}}})
+    assert r.status_code == 200 and r.headers["content-type"] == "application/pdf"

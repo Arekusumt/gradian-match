@@ -20,3 +20,6 @@ button.primary:disabled{opacity:.6}.platforms{font-size:13px;color:var(--muted);
 .error{color:var(--bad)}
 pre{overflow:auto;background:#0c0e12;padding:12px;border-radius:8px;font-size:12px}
 footer{padding:20px 22px;color:var(--muted);border-top:1px solid #232833}footer a{color:var(--accent)}
+.file{margin-top:6px;font-size:12px;color:var(--muted)}
+.conditions{background:#0c0e12;color:var(--fg);border:1px solid #262c37;border-radius:8px;padding:6px 8px;font-size:13px;min-width:150px}
+#dl-pdf{margin-bottom:10px}
