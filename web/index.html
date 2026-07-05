@@ -1,3 +1,32 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
-<title>Gradian Match</title></head>
-<body><h1>Gradian Match</h1></body></html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradian Match</title><link rel="stylesheet" href="/styles.css"></head>
+<body>
+<header><span class="logo">▲ Gradian Match</span>
+  <span id="claude-status" class="status">checking…</span></header>
+<nav class="tabs"><button class="tab active" data-tab="applier">Applier</button>
+  <button class="tab" data-tab="recruiter" disabled title="Phase 2">Recruiter</button></nav>
+
+<section id="applier" class="pane active">
+  <div class="grid">
+    <label>Your CV<textarea id="cv" rows="10" placeholder="Paste your CV text…"></textarea></label>
+    <label>Job offer<textarea id="offer" rows="10" placeholder="Paste the offer text or a URL…"></textarea></label>
+  </div>
+  <div class="row">
+    <button id="analyze" class="primary">Analyze compatibility</button>
+    <span class="platforms">Job Finder:
+      <span id="platforms"></span>
+      <button id="find-jobs">Find matching offers</button></span>
+  </div>
+  <div id="report" class="card hidden"></div>
+  <div id="jobs" class="card hidden"></div>
+
+  <div class="regen">
+    <label>Tailoring aggressiveness: <b id="agg-val">50</b>
+      <input type="range" id="agg" min="1" max="100" value="50"></label>
+    <button id="regen" class="primary">Regenerate CV for this offer</button>
+  </div>
+  <div id="regen-out" class="card hidden"></div>
+</section>
+<footer>Built by <a href="https://gradiangrowth.com">Gradian</a> · runs on your own Claude Code</footer>
+<script src="/app.js"></script></body></html>
