@@ -1,0 +1,14 @@
+{
+  "python": ["py", "python3"],
+  "sql": ["mysql", "postgresql", "postgres", "t-sql", "pl/sql"],
+  "power bi": ["powerbi", "pbi", "microsoft power bi"],
+  "data analysis": ["data analytics", "análisis de datos", "anàlisi de dades"],
+  "data visualization": ["dataviz", "visualization", "visualització de dades"],
+  "excel": ["microsoft excel", "spreadsheets"],
+  "statistics": ["stats", "estadística", "estadistica"],
+  "machine learning": ["ml", "aprenentatge automàtic", "aprendizaje automático"],
+  "azure": ["microsoft azure"],
+  "git": ["github", "version control"],
+  "english": ["inglés", "anglès"],
+  "r": ["rstats", "r language"]
+}
