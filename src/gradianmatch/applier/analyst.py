@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from dataclasses import dataclass
 from gradianmatch import config
 from gradianmatch.resume_model import Resume, resume_from_dict
@@ -12,22 +13,48 @@ class AnalyzeResult:
     cv: Resume
     semantic: SemanticFit
 
+def _as_int(v, default: int = 0) -> int:
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
+
+def _as_str_list(v) -> list[str]:
+    if isinstance(v, list):
+        return [str(x) for x in v if x is not None]
+    if isinstance(v, str) and v.strip():
+        return [v.strip()]
+    return []
+
 def _load_prompt(cv_text: str, offer_text: str) -> str:
     tmpl = (config.AGENTS_DIR / "analyst.md").read_text(encoding="utf-8")
-    return tmpl.replace("<<<CV>>>", cv_text).replace("<<<OFFER>>>", offer_text)
+    repl = {"<<<CV>>>": cv_text, "<<<OFFER>>>": offer_text}
+    return re.sub(r"<<<CV>>>|<<<OFFER>>>", lambda m: repl[m.group(0)], tmpl)
 
 def analyze(cv_text: str, offer_text: str, claude, taxonomy: SkillTaxonomy) -> AnalyzeResult:
     data = claude.run_json(_load_prompt(cv_text, offer_text))
-    cv = resume_from_dict(data.get("cv", {}))
-    o = data.get("offer", {})
+    if not isinstance(data, dict):
+        data = {}
+    cv = resume_from_dict(data.get("cv") or {})
+    o = data.get("offer") or {}
+    if not isinstance(o, dict):
+        o = {}
     offer = OfferReqs(
-        title=o.get("title", ""), seniority=o.get("seniority", ""),
-        must_have_skills=o.get("must_have_skills", []), nice_to_have_skills=o.get("nice_to_have_skills", []),
-        min_years=int(o.get("min_years", 0) or 0), location=o.get("location", ""),
-        remote=o.get("remote", None), languages=o.get("languages", []), education=o.get("education", ""))
-    s = data.get("semantic", {})
-    semantic = SemanticFit(score_0_100=int(s.get("score_0_100", 0) or 0),
-                           rationale=s.get("rationale", ""), transferable=s.get("transferable", []),
-                           red_flags=s.get("red_flags", []))
+        title=str(o.get("title") or ""), seniority=str(o.get("seniority") or ""),
+        must_have_skills=_as_str_list(o.get("must_have_skills")),
+        nice_to_have_skills=_as_str_list(o.get("nice_to_have_skills")),
+        min_years=_as_int(o.get("min_years")),
+        location=str(o.get("location") or ""),
+        remote=o.get("remote", None),
+        languages=_as_str_list(o.get("languages")),
+        education=str(o.get("education") or ""))
+    s = data.get("semantic") or {}
+    if not isinstance(s, dict):
+        s = {}
+    semantic = SemanticFit(
+        score_0_100=_as_int(s.get("score_0_100")),
+        rationale=str(s.get("rationale") or ""),
+        transferable=_as_str_list(s.get("transferable")),
+        red_flags=_as_str_list(s.get("red_flags")))
     report = score_compatibility(cv, offer, semantic, taxonomy)
     return AnalyzeResult(report=report, offer=offer, cv=cv, semantic=semantic)

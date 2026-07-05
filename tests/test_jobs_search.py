@@ -18,3 +18,12 @@ def test_find_jobs_ranks_relevant_first():
                      claude=FakeClaude(), http=None, cfg=None, searcher=fake_search)
     assert jobs[0].posting.title == "Data Analyst"
     assert jobs[0].score >= jobs[-1].score
+
+def test_build_query_uses_both_conditions_and_cv():
+    captured = {}
+    class FC:
+        def run_json(self, prompt, timeout=120):
+            captured["prompt"] = prompt
+            return {"query": "x", "location": ""}
+    build_query(cv_text="Python SQL", conditions="remote Barcelona", claude=FC())
+    assert "Python SQL" in captured["prompt"] and "remote Barcelona" in captured["prompt"]

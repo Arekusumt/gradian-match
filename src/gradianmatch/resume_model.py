@@ -56,6 +56,8 @@ def _list(cls, items) -> list:
     return [_mk(cls, x) for x in (items or []) if isinstance(x, dict)]
 
 def resume_from_dict(d: dict) -> Resume:
+    if not isinstance(d, dict):
+        return Resume()
     b = d.get("basics", {}) or {}
     if not isinstance(b, dict):
         b = {}

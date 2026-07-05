@@ -24,3 +24,25 @@ def test_analyze_builds_report_from_claude(sample_cv_text, sample_offer_text):
     assert "power bi" in {k.lower() for k in res.report.missing_keywords}
     assert res.report.semantic.score_0_100 == 72
     assert "<<<CV>>>" not in claude.prompts[0]  # placeholders were substituted
+
+class _FC:
+    def __init__(self, payload): self.payload = payload
+    def run_json(self, prompt, timeout=120): return self.payload
+
+def test_analyze_survives_malformed_payload():
+    bad = {"cv": None, "offer": {"min_years": "several", "must_have_skills": "Python"},
+           "semantic": None}
+    res = analyze("cv", "offer", _FC(bad), SkillTaxonomy())
+    assert 0 <= res.report.overall <= 100
+    assert res.offer.must_have_skills == ["Python"]  # bare string coerced to a list
+    assert res.offer.min_years == 0                   # non-numeric coerced to 0
+
+def test_analyze_survives_nondict_payload():
+    res = analyze("cv", "offer", _FC([]), SkillTaxonomy())  # Claude returned a list
+    assert res.report.overall >= 0
+
+def test_load_prompt_does_not_reinject_placeholder():
+    from gradianmatch.applier.analyst import _load_prompt
+    out = _load_prompt("CV mentions <<<OFFER>>> literally", "THE_OFFER")
+    assert out.count("THE_OFFER") == 1        # only the template slot was filled
+    assert "<<<OFFER>>>" in out               # the literal token inside the CV survives

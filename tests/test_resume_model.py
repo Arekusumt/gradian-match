@@ -35,3 +35,7 @@ def test_null_list_field_defaults_empty():
 def test_non_dict_list_items_are_skipped():
     r = resume_from_dict({"work": ["garbage", None, {"position": "Analyst"}]})
     assert [w.position for w in r.work] == ["Analyst"]
+
+def test_resume_from_dict_handles_non_dict():
+    assert resume_from_dict(None).basics.name == ""
+    assert resume_from_dict("garbage").work == []
