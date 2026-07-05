@@ -53,5 +53,8 @@ def verify_sources(text: str, http) -> list[SourceResult]:
     out = []
     for url in extract_urls(text):
         kind = classify_url(url)
-        out.append(_verify_github(url, http) if kind == "github" else _verify_web(url, kind, http))
+        try:
+            out.append(_verify_github(url, http) if kind == "github" else _verify_web(url, kind, http))
+        except Exception as e:  # noqa: BLE001 — one bad URL must not kill the batch
+            out.append(SourceResult(url, kind, False, {"error": str(e)[:120]}))
     return out

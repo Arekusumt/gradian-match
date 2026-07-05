@@ -36,3 +36,23 @@ def test_overall_is_weighted_blend():
     hi = score_compatibility(CV, _offer(), sem_hi, SkillTaxonomy()).overall
     lo = score_compatibility(CV, _offer(), sem_lo, SkillTaxonomy()).overall
     assert hi > lo
+
+def test_overall_is_clamped_to_0_100():
+    lo = SemanticFit(score_0_100=-100)
+    hi = SemanticFit(score_0_100=250)
+    r_lo = score_compatibility(CV, _offer(must_have_skills=[], nice_to_have_skills=[], languages=[], min_years=0), lo, SkillTaxonomy())
+    r_hi = score_compatibility(CV, _offer(), hi, SkillTaxonomy())
+    assert 0 <= r_lo.overall <= 100 and 0 <= r_hi.overall <= 100
+    assert r_hi.semantic.score_0_100 <= 100
+
+def test_language_gate_matches_catalan_label():
+    from gradianmatch.resume_model import resume_from_dict as _rfd
+    cv_ca = _rfd({"languages": [{"language": "anglès", "fluency": "fluid"}]})
+    sem = SemanticFit(score_0_100=70)
+    rep = score_compatibility(cv_ca, _offer(must_have_skills=[], nice_to_have_skills=[], min_years=0, languages=["English"]), sem, SkillTaxonomy())
+    assert rep.gating.score_0_100 == 100  # anglès satisfies English
+
+def test_nice_to_have_miss_is_surfaced():
+    sem = SemanticFit(score_0_100=70)
+    rep = score_compatibility(CV, _offer(must_have_skills=["Python", "SQL"], nice_to_have_skills=["Azure"]), sem, SkillTaxonomy())
+    assert any("Azure" in g for g in rep.gaps)

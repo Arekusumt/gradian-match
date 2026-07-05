@@ -31,3 +31,17 @@ def test_dead_link_flagged():
     http = FakeHttp({"https://example.com/x": FakeResp(404, url="https://example.com/x")})
     results = verify_sources("https://example.com/x", http)
     assert results[0].ok is False
+
+def test_verify_isolates_per_url_failure():
+    class R:
+        def __init__(self, status): self.status_code = status
+        def json(self): return {}
+    class Boom:
+        def get(self, url, **kw):
+            if "api.github.com" in url:
+                raise ConnectionError("down")
+            return R(200)
+    results = verify_sources("github.com/a/b and https://example.com/ok", Boom())
+    assert len(results) == 2
+    assert any(r.kind == "github" and r.ok is False for r in results)
+    assert any(r.kind == "web" and r.ok is True for r in results)

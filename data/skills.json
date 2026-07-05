@@ -9,6 +9,10 @@
   "machine learning": ["ml", "aprenentatge automàtic", "aprendizaje automático"],
   "azure": ["microsoft azure"],
   "git": ["github", "version control"],
-  "english": ["inglés", "anglès"],
+  "english": ["inglés", "ingles", "anglès", "angles"],
+  "spanish": ["español", "espanol", "castellano", "castellà", "castella", "espanyol"],
+  "catalan": ["català", "catala", "catalán", "catalan"],
+  "french": ["francés", "frances", "francès", "francais", "français"],
+  "german": ["alemán", "aleman", "alemany", "deutsch"],
   "r": ["rstats", "r language"]
 }

@@ -28,3 +28,21 @@ def test_adzuna_skipped_without_keys():
     http = FakeHttp({})
     jobs = search_jobs("x", ["adzuna"], http, cfg=None)  # no keys → skip, no crash
     assert jobs == []
+
+def test_search_remotive_maps_to_jobposting():
+    http = FakeHttp({"https://remotive.com/api/remote-jobs":
+        {"jobs": [{"title": "Data Analyst", "company_name": "ACME",
+                   "candidate_required_location": "Worldwide", "url": "https://r/1",
+                   "description": "SQL Python"}]}})
+    jobs = search_jobs("data", ["remotive"], http, cfg=None)
+    assert len(jobs) == 1 and jobs[0].source == "remotive" and jobs[0].location == "Worldwide"
+
+def test_search_adzuna_with_keys_maps_fields():
+    class Cfg:
+        adzuna_app_id = "id"; adzuna_app_key = "key"; jooble_key = None
+    http = FakeHttp({"https://api.adzuna.com/v1/api/jobs/es/search/1":
+        {"results": [{"title": "Analyst", "company": {"display_name": "ACME"},
+                      "location": {"display_name": "Barcelona"}, "redirect_url": "https://a/1",
+                      "description": "SQL", "salary_min": 30000}]}})
+    jobs = search_jobs("analyst", ["adzuna"], http, Cfg())
+    assert len(jobs) == 1 and jobs[0].company == "ACME" and jobs[0].salary == "30000"
