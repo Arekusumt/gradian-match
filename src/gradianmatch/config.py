@@ -20,7 +20,8 @@ class Config:
 
 def load_config() -> Config:
     load_dotenv(PROJECT_ROOT / ".env")
-    g = lambda k: (os.environ.get(k) or None)
+    def g(k: str) -> str | None:
+        return os.environ.get(k) or None
     return Config(
         adzuna_app_id=g("ADZUNA_APP_ID"),
         adzuna_app_key=g("ADZUNA_APP_KEY"),

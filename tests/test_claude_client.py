@@ -32,3 +32,15 @@ def test_check_available_false_when_binary_missing():
         raise FileNotFoundError("claude")
     ok, msg = ClaudeClient(runner=runner).check_available()
     assert ok is False and "Claude Code" in msg
+
+def test_run_json_wraps_runner_errors_in_claude_error():
+    def runner(argv, timeout):
+        raise TimeoutError("hung")
+    with pytest.raises(ClaudeError):
+        ClaudeClient(runner=runner).run_json("hi")
+
+def test_run_json_raises_on_error_envelope():
+    payload = json.dumps({"type": "result", "is_error": True, "result": "boom"})
+    runner = lambda argv, timeout: payload
+    with pytest.raises(ClaudeError):
+        ClaudeClient(runner=runner).run_json("hi")

@@ -9,7 +9,9 @@ class ClaudeError(RuntimeError):
 Runner = Callable[[list[str], int], str]
 
 def _default_runner(argv: list[str], timeout: int) -> str:
-    proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, encoding="utf-8")
+    exe = shutil.which(argv[0]) or argv[0]
+    proc = subprocess.run([exe, *argv[1:]], capture_output=True, text=True,
+                          timeout=timeout, encoding="utf-8")
     if proc.returncode != 0:
         raise ClaudeError(f"claude exited {proc.returncode}: {proc.stderr.strip()[:400]}")
     return proc.stdout
@@ -44,18 +46,33 @@ class ClaudeClient:
         raw = self._runner(argv, timeout)
         try:
             envelope = json.loads(raw)
-            return envelope.get("result", raw) if isinstance(envelope, dict) else raw
         except json.JSONDecodeError:
             return raw  # some versions print the text directly
+        if isinstance(envelope, dict):
+            if envelope.get("is_error"):
+                raise ClaudeError(
+                    "Claude returned an error: "
+                    f"{envelope.get('result') or envelope.get('subtype') or raw[:300]}")
+            return envelope.get("result", raw)
+        return raw
+
+    def _call(self, prompt: str, timeout: int) -> str:
+        """Invoke the CLI, normalizing any transport failure into ClaudeError."""
+        try:
+            return self._invoke(prompt, timeout)
+        except ClaudeError:
+            raise
+        except Exception as e:  # subprocess.TimeoutExpired, FileNotFoundError, etc.
+            raise ClaudeError(f"Claude Code call failed: {type(e).__name__}: {e}") from e
 
     def run_json(self, prompt: str, timeout: int = 120) -> dict | list:
-        text = self._invoke(prompt, timeout)
+        text = self._call(prompt, timeout)
         try:
             return _extract_json(text)
         except json.JSONDecodeError:
             repair = (prompt + "\n\nYour previous answer was not valid JSON. "
                       "Reply with ONLY the JSON, no prose, no code fences.")
-            text2 = self._invoke(repair, timeout)
+            text2 = self._call(repair, timeout)
             try:
                 return _extract_json(text2)
             except json.JSONDecodeError as e:
