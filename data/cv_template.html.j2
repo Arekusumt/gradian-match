@@ -1,20 +1,83 @@
 <!doctype html><html><head><meta charset="utf-8">
 <style>
- body{font-family:Arial,Helvetica,sans-serif;color:#141414;margin:32px;font-size:12px;line-height:1.4}
- h1{font-size:22px;margin:0;color:#0b5} .muted{color:#555}
- h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #ddd;margin-top:18px}
- .item{margin:8px 0} .role{font-weight:bold} ul{margin:4px 0 4px 18px}
+  /* ATS-safe, print-clean CV. System font stack only — no webfont load to fail in
+     headless Chrome, and the text layer stays fully selectable/parseable by ATS.
+     A restrained indigo/teal accent gives it a modern, intentional look without any
+     graphics that would confuse a resume parser. */
+  @page { size: A4; margin: 14mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1a1f2b; margin: 0; font-size: 10.6pt; line-height: 1.42;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  header { padding-bottom: 8px; }
+  h1 { font-size: 22pt; margin: 0; letter-spacing: -0.01em; color: #4338CA; font-weight: 700; }
+  .label { font-size: 11pt; color: #334155; margin-top: 2px; font-weight: 600; }
+  .contact { font-size: 9pt; color: #64748b; margin-top: 4px; }
+  .rule { height: 3px; margin: 8px 0 2px; border-radius: 2px;
+          background: linear-gradient(90deg, #2DD4BF, #6366F1); }
+  .summary { margin: 10px 0 2px; color: #334155; }
+  h2 { font-size: 9.5pt; text-transform: uppercase; letter-spacing: 0.09em; color: #4338CA;
+       margin: 16px 0 6px; padding-bottom: 3px; border-bottom: 1.5px solid #e2e8f0; font-weight: 700; }
+  .item { margin: 7px 0; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .role { font-weight: 700; color: #0f172a; }
+  .org { font-weight: 600; color: #334155; }
+  .dates { font-size: 8.6pt; color: #94a3b8; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  ul { margin: 4px 0 4px 16px; padding: 0; }
+  li { margin: 2px 0; }
+  .skills-line { color: #334155; }
+  .skills-line b { color: #0f172a; }
+  .chips span { display: inline-block; }
+  p { margin: 4px 0; }
 </style></head><body>
- <h1>{{ basics.name }}</h1>
- <div class="muted">{{ basics.label }}{% if basics.location %} · {{ basics.location }}{% endif %}
-   {% if basics.email %} · {{ basics.email }}{% endif %}{% if basics.url %} · {{ basics.url }}{% endif %}</div>
- {% if basics.summary %}<p>{{ basics.summary }}</p>{% endif %}
- {% if work %}<h2>Experience</h2>{% for w in work %}<div class="item">
-   <div class="role">{{ w.position }} — {{ w.name }} <span class="muted">{{ w.startDate }}–{{ w.endDate or "present" }}</span></div>
-   {% if w.summary %}<div>{{ w.summary }}</div>{% endif %}
-   {% if w.highlights %}<ul>{% for h in w.highlights %}<li>{{ h }}</li>{% endfor %}</ul>{% endif %}
- </div>{% endfor %}{% endif %}
- {% if skills %}<h2>Skills</h2><div>{% for s in skills %}{{ s.name }}{% if s.keywords %}: {{ s.keywords|join(", ") }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</div>{% endif %}
- {% if education %}<h2>Education</h2>{% for e in education %}<div class="item">{{ e.studyType }} {{ e.area }} — {{ e.institution }} <span class="muted">{{ e.startDate }}–{{ e.endDate }}</span></div>{% endfor %}{% endif %}
- {% if languages %}<h2>Languages</h2><div>{% for l in languages %}{{ l.language }} ({{ l.fluency }}){% if not loop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+  <header>
+    <h1>{{ basics.name }}</h1>
+    {% if basics.label %}<div class="label">{{ basics.label }}</div>{% endif %}
+    <div class="contact">
+      {% set bits = [] %}
+      {% if basics.location %}{% set _ = bits.append(basics.location) %}{% endif %}
+      {% if basics.email %}{% set _ = bits.append(basics.email) %}{% endif %}
+      {% if basics.phone %}{% set _ = bits.append(basics.phone) %}{% endif %}
+      {% if basics.url %}{% set _ = bits.append(basics.url) %}{% endif %}
+      {% for p in basics.profiles %}{% if p.url %}{% set _ = bits.append(p.url) %}{% endif %}{% endfor %}
+      {{ bits | join("  ·  ") }}
+    </div>
+    <div class="rule"></div>
+  </header>
+
+  {% if basics.summary %}<p class="summary">{{ basics.summary }}</p>{% endif %}
+
+  {% if work %}<h2>Experience</h2>
+  {% for w in work %}<div class="item">
+    <div class="row">
+      <div><span class="role">{{ w.position }}</span>{% if w.name %} — <span class="org">{{ w.name }}</span>{% endif %}</div>
+      {% if w.startDate or w.endDate %}<div class="dates">{{ w.startDate }}{% if w.startDate or w.endDate %} – {% endif %}{{ w.endDate or "Present" }}</div>{% endif %}
+    </div>
+    {% if w.summary %}<div>{{ w.summary }}</div>{% endif %}
+    {% if w.highlights %}<ul>{% for h in w.highlights %}<li>{{ h }}</li>{% endfor %}</ul>{% endif %}
+  </div>{% endfor %}{% endif %}
+
+  {% if projects %}<h2>Projects</h2>
+  {% for pr in projects %}<div class="item">
+    <div class="row"><div><span class="role">{{ pr.name }}</span></div>{% if pr.url %}<div class="dates">{{ pr.url }}</div>{% endif %}</div>
+    {% if pr.description %}<div>{{ pr.description }}</div>{% endif %}
+    {% if pr.highlights %}<ul>{% for h in pr.highlights %}<li>{{ h }}</li>{% endfor %}</ul>{% endif %}
+  </div>{% endfor %}{% endif %}
+
+  {% if skills %}<h2>Skills</h2>
+  <div class="skills-line">{% for s in skills %}<b>{{ s.name }}</b>{% if s.keywords %}: {{ s.keywords | join(", ") }}{% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+
+  {% if education %}<h2>Education</h2>
+  {% for e in education %}<div class="item"><div class="row">
+    <div><span class="role">{{ e.studyType }}{% if e.area %} {{ e.area }}{% endif %}</span>{% if e.institution %} — <span class="org">{{ e.institution }}</span>{% endif %}</div>
+    {% if e.startDate or e.endDate %}<div class="dates">{{ e.startDate }}{% if e.startDate or e.endDate %} – {% endif %}{{ e.endDate or "" }}</div>{% endif %}
+  </div></div>{% endfor %}{% endif %}
+
+  {% if certificates %}<h2>Certificates</h2>
+  <div class="skills-line">{% for c in certificates %}{{ c.name }}{% if c.issuer %} — {{ c.issuer }}{% endif %}{% if c.date %} ({{ c.date }}){% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+
+  {% if languages %}<h2>Languages</h2>
+  <div class="skills-line">{% for l in languages %}{{ l.language }}{% if l.fluency %} ({{ l.fluency }}){% endif %}{% if not loop.last %}  ·  {% endif %}{% endfor %}</div>{% endif %}
 </body></html>
