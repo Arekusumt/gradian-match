@@ -1,37 +1,117 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gradian Match</title><link rel="stylesheet" href="/styles.css"></head>
+<title>Gradian Match</title>
+<link rel="icon" href="/assets/gradian-arrow.svg">
+<link rel="stylesheet" href="/styles.css">
+</head>
 <body>
-<header><span class="logo">▲ Gradian Match</span>
-  <span id="claude-status" class="status">checking…</span></header>
-<nav class="tabs"><button class="tab active" data-tab="applier">Applier</button>
-  <button class="tab" data-tab="recruiter" disabled title="Phase 2">Recruiter</button></nav>
+<header class="top">
+  <span class="brand">
+    <svg viewBox="0 0 100 100" aria-label="Gradian"><defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="24" y1="76" x2="80" y2="26"><stop offset="0" stop-color="#2DD4BF"/><stop offset="1" stop-color="#6366F1"/></linearGradient></defs><circle cx="24" cy="76" r="6.2" fill="none" stroke="url(#g)" stroke-width="3.4"/><g fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><line x1="35" y1="66" x2="80" y2="26"/><path d="M62.5 30.3 L80 26 L73.7 42.9"/></g></svg>
+    <b>Gradian&nbsp;Match</b><span class="tm">v2 · WIP</span>
+  </span>
+  <span style="display:flex;gap:10px;align-items:center">
+    <button id="theme" class="themebtn" title="Toggle light / dark">◐</button>
+    <span id="status" class="statuschip">checking…</span>
+  </span>
+</header>
 
-<section id="applier" class="pane active">
-  <div class="grid">
-    <label>Your CV
-      <textarea id="cv" rows="10" placeholder="Paste your CV text, or upload a PDF…"></textarea>
-      <input type="file" id="cv-file" accept=".pdf,.txt" class="file"></label>
-    <label>Job offer
-      <textarea id="offer" rows="10" placeholder="Paste the offer text or a URL, or upload a PDF…"></textarea>
-      <input type="file" id="offer-file" accept=".pdf,.txt" class="file"></label>
-  </div>
-  <div class="row">
-    <button id="analyze" class="primary">Analyze compatibility</button>
-    <span class="platforms">Job Finder:
-      <span id="platforms"></span>
-      <input id="conditions" class="conditions" placeholder="extra filters (remote, city…)">
-      <button id="find-jobs">Find matching offers</button></span>
-  </div>
-  <div id="report" class="card hidden"></div>
-  <div id="jobs" class="card hidden"></div>
+<main>
+  <section id="setup" class="setup hidden"></section>
 
-  <div class="regen">
-    <label>Tailoring aggressiveness: <b id="agg-val">50</b>
-      <input type="range" id="agg" min="1" max="100" value="50"></label>
-    <button id="regen" class="primary">Regenerate CV for this offer</button>
-  </div>
-  <div id="regen-out" class="card hidden"></div>
-</section>
-<footer>Built by <a href="https://gradiangrowth.com">Gradian</a> · runs on your own Claude Code</footer>
-<script src="/app.js"></script></body></html>
+  <nav class="tabs">
+    <button class="tab active" data-tab="applier">Applier</button>
+    <button class="tab" data-tab="recruiter">Recruiter</button>
+  </nav>
+
+  <!-- ───────────── APPLIER ───────────── -->
+  <section id="applier" class="pane active">
+    <div class="grid2">
+      <div class="panel">
+        <label class="fld" for="cv">Your CV</label>
+        <textarea id="cv" rows="9" placeholder="Paste your CV text — or upload a PDF and see it below."></textarea>
+        <div class="filerow"><label class="fakefile" for="cv-file">⬆ Upload PDF / TXT</label>
+          <input type="file" id="cv-file" accept=".pdf,.txt"><span class="filename" id="cv-name"></span></div>
+        <div id="cv-pdf" class="pdfwrap hidden"><div class="cap"><span>Your PDF</span><span class="mono">as it will be read</span></div><iframe title="CV preview"></iframe></div>
+      </div>
+      <div class="panel">
+        <label class="fld" for="offer">Job offer</label>
+        <textarea id="offer" rows="9" placeholder="Paste the offer text or a URL — or upload a PDF."></textarea>
+        <div class="filerow"><label class="fakefile" for="offer-file">⬆ Upload PDF / TXT</label>
+          <input type="file" id="offer-file" accept=".pdf,.txt"><span class="filename" id="offer-name"></span></div>
+        <div id="offer-pdf" class="pdfwrap hidden"><div class="cap"><span>Offer PDF</span><span class="mono">loaded</span></div><iframe title="Offer preview"></iframe></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="analyze" class="btn primary">Analyze compatibility</button>
+      <span class="eyebrow">or find offers that fit you →</span>
+      <input id="conditions" class="txt" style="max-width:230px" placeholder="remote, Barcelona, junior…">
+      <span id="platforms" class="platforms"></span>
+      <button id="find-jobs" class="btn sm">Find matching offers</button>
+    </div>
+
+    <div id="console" class="console hidden"></div>
+    <div id="report" class="panel report hidden" style="margin-top:16px"></div>
+    <div id="jobs" class="panel hidden" style="margin-top:16px"></div>
+
+    <div class="panel" style="margin-top:20px">
+      <div class="eyebrow" style="margin-bottom:10px">Tailor a CV for this offer</div>
+      <div class="regen">
+        <span class="aggcap">gentle</span>
+        <input type="range" id="agg" min="1" max="100" value="50">
+        <span class="aggcap">aggressive</span>
+        <span class="aggval" id="agg-val">50</span>
+        <button id="regen" class="btn go">Regenerate CV →</button>
+      </div>
+      <div class="aggcap" id="agg-note" style="margin-top:8px"></div>
+    </div>
+    <div id="regen-console" class="console hidden"></div>
+    <div id="regen-out" class="panel hidden" style="margin-top:16px"></div>
+  </section>
+
+  <!-- ───────────── RECRUITER ───────────── -->
+  <section id="recruiter" class="pane">
+    <div class="panel">
+      <label class="fld" for="r-offer">The role you're hiring for</label>
+      <textarea id="r-offer" rows="6" placeholder="Paste the job description / requirements."></textarea>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span class="eyebrow">Candidates</span>
+        <button id="add-cand" class="btn sm">+ Add candidate</button>
+      </div>
+      <div id="cands"></div>
+      <button id="rank" class="btn primary" style="margin-top:6px">Screen &amp; rank candidates</button>
+      <p class="disclaimer">Candidate CVs are personal data. Everything runs locally and nothing is stored — the legal basis for processing is yours as the recruiter.</p>
+    </div>
+
+    <div id="r-console" class="console hidden"></div>
+    <div id="r-results" class="hidden" style="margin-top:16px"></div>
+
+    <div class="panel" style="margin-top:20px">
+      <div class="eyebrow" style="margin-bottom:10px">Find candidates (legal sourcing)</div>
+      <div class="filerow" style="gap:10px">
+        <input id="s-role" class="txt" style="max-width:220px" placeholder="role, e.g. data analyst">
+        <input id="s-loc" class="txt" style="max-width:170px" placeholder="location">
+        <input id="s-lang" class="txt" style="max-width:150px" placeholder="GitHub language">
+        <select id="s-site" class="txt" style="max-width:150px"><option value="linkedin">LinkedIn X-ray</option><option value="github">GitHub X-ray</option></select>
+        <button id="search" class="btn sm">Search</button>
+      </div>
+      <div id="r-search" class="hidden" style="margin-top:12px"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>Built by <a href="https://gradiangrowth.com">Gradian</a> · runs on <b id="foot-backend">your own AI</b></span>
+  <span><span class="wip">🚧 work in progress</span> · everything stays on your machine</span>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
