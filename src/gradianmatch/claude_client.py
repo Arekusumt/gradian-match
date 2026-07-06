@@ -65,7 +65,7 @@ class ClaudeClient:
         except Exception as e:  # subprocess.TimeoutExpired, FileNotFoundError, etc.
             raise ClaudeError(f"Claude Code call failed: {type(e).__name__}: {e}") from e
 
-    def run_json(self, prompt: str, timeout: int = 120) -> dict | list:
+    def run_json(self, prompt: str, timeout: int = 300) -> dict | list:
         text = self._call(prompt, timeout)
         try:
             return _extract_json(text)
