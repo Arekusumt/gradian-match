@@ -1,8 +1,8 @@
 from gradianmatch.resume_model import resume_from_dict, resume_to_dict, Resume
 
 RAW = {
-    "basics": {"name": "Alex", "email": "a@x.com", "summary": "Analyst",
-               "profiles": [{"network": "GitHub", "url": "github.com/Arekusumt"}]},
+    "basics": {"name": "Sam", "email": "a@x.com", "summary": "Analyst",
+               "profiles": [{"network": "GitHub", "url": "github.com/sam-rivera-dev"}]},
     "work": [{"name": "Gradian", "position": "Founder", "startDate": "2025",
               "highlights": ["Built an agentic engine"]}],
     "skills": [{"name": "Programming", "keywords": ["Python", "SQL"]}],
@@ -12,11 +12,11 @@ RAW = {
 def test_roundtrip_preserves_known_fields():
     r = resume_from_dict(RAW)
     assert isinstance(r, Resume)
-    assert r.basics.name == "Alex"
+    assert r.basics.name == "Sam"
     assert r.work[0].highlights == ["Built an agentic engine"]
     assert r.skills[0].keywords == ["Python", "SQL"]
     back = resume_to_dict(r)
-    assert back["basics"]["name"] == "Alex"
+    assert back["basics"]["name"] == "Sam"
     assert back["work"][0]["position"] == "Founder"
 
 def test_missing_sections_default_empty():

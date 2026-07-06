@@ -2,7 +2,7 @@ from gradianmatch.resume_model import resume_from_dict
 from gradianmatch.scoring import OfferReqs
 from gradianmatch.applier.regenerate import regenerate
 
-CV = resume_from_dict({"basics": {"name": "Alex"},
+CV = resume_from_dict({"basics": {"name": "Sam"},
                        "skills": [{"name": "p", "keywords": ["Python", "SQL"]}]})
 OFFER = OfferReqs(title="Data Analyst", must_have_skills=["Python", "SQL", "Power BI"])
 
@@ -13,7 +13,7 @@ class ScriptedClaude:
         self.prompts.append(prompt)
         return self.payloads.pop(0)
 
-TAILORED = {"resume": {"basics": {"name": "Alex"},
+TAILORED = {"resume": {"basics": {"name": "Sam"},
                        "skills": [{"name": "p", "keywords": ["Python", "SQL", "Power BI"]}]},
             "ledger": [{"claim": "Power BI", "location": "skills", "why": "added for match", "grounded": False}]}
 

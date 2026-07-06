@@ -3,7 +3,7 @@ from gradianmatch.skills_taxonomy import SkillTaxonomy
 from gradianmatch.scoring import (OfferReqs, SemanticFit, score_compatibility)
 
 CV = resume_from_dict({
-    "basics": {"name": "Alex"},
+    "basics": {"name": "Sam"},
     "skills": [{"name": "prog", "keywords": ["Python", "SQL", "R"]}],
     "languages": [{"language": "English", "fluency": "Fluent"}],
     "work": [{"name": "Gradian", "position": "Analyst", "startDate": "2025"}],

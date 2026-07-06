@@ -7,7 +7,7 @@ class FakeClaude:
         self.prompts.append(prompt); return self.payload
 
 PAYLOAD = {
-    "cv": {"basics": {"name": "Alex"},
+    "cv": {"basics": {"name": "Sam"},
            "skills": [{"name": "prog", "keywords": ["Python", "SQL", "R"]}],
            "languages": [{"language": "English", "fluency": "Fluent"}]},
     "offer": {"title": "Data Analyst", "seniority": "junior",

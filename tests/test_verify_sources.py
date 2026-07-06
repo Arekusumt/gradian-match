@@ -10,22 +10,22 @@ class FakeHttp:
     def get(self, url, **kw): return self.routes[url]
 
 def test_extract_and_classify():
-    text = "See github.com/Arekusumt/gradian-sistema and https://linkedin.com/in/alex"
+    text = "See github.com/sam-rivera-dev/open-portfolio and https://linkedin.com/in/sam-rivera"
     urls = extract_urls(text)
     assert any("github.com" in u for u in urls)
     assert classify_url("https://github.com/a/b") == "github"
     assert classify_url("https://linkedin.com/in/x") == "linkedin"
 
 def test_github_repo_verified():
-    api = "https://api.github.com/repos/Arekusumt/gradian-sistema"
+    api = "https://api.github.com/repos/sam-rivera-dev/open-portfolio"
     http = FakeHttp({
-        "https://github.com/Arekusumt/gradian-sistema": FakeResp(200, url=api),
-        api: FakeResp(200, {"stargazers_count": 3, "owner": {"login": "Arekusumt"},
+        "https://github.com/sam-rivera-dev/open-portfolio": FakeResp(200, url=api),
+        api: FakeResp(200, {"stargazers_count": 3, "owner": {"login": "sam-rivera-dev"},
                             "pushed_at": "2026-07-01T00:00:00Z", "language": "Python"}),
     })
-    results = verify_sources("github.com/Arekusumt/gradian-sistema", http)
+    results = verify_sources("github.com/sam-rivera-dev/open-portfolio", http)
     gh = [r for r in results if r.kind == "github"][0]
-    assert gh.ok and gh.details["owner"] == "Arekusumt" and gh.details["stars"] == 3
+    assert gh.ok and gh.details["owner"] == "sam-rivera-dev" and gh.details["stars"] == 3
 
 def test_dead_link_flagged():
     http = FakeHttp({"https://example.com/x": FakeResp(404, url="https://example.com/x")})

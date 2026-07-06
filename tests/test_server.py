@@ -6,7 +6,7 @@ from gradianmatch import server
 
 class _FakeClaude:
     def run_json(self, prompt, timeout=120):
-        return {"cv": {"basics": {"name": "Alex"}, "skills": [{"name": "p", "keywords": ["Python"]}]},
+        return {"cv": {"basics": {"name": "Sam"}, "skills": [{"name": "p", "keywords": ["Python"]}]},
                 "offer": {"title": "Analyst", "must_have_skills": ["Python", "Power BI"],
                           "nice_to_have_skills": [], "min_years": 0, "languages": [], "seniority": "junior",
                           "location": "", "remote": None, "education": ""},
@@ -172,5 +172,5 @@ def test_pdf_endpoint(monkeypatch):
     if find_chrome() is None:
         import pytest; pytest.skip("no chrome/edge")
     c = make_client(monkeypatch)
-    r = c.post("/api/pdf", json={"resume": {"basics": {"name": "Alex"}}})
+    r = c.post("/api/pdf", json={"resume": {"basics": {"name": "Sam"}}})
     assert r.status_code == 200 and r.headers["content-type"] == "application/pdf"

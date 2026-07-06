@@ -1,5 +1,5 @@
-Alex Martí — Data & AI Analyst
-Reus, Catalonia · alex@example.com · github.com/Arekusumt
+Sam Rivera — Data & AI Analyst
+Reus, Catalonia · sam@example.com · github.com/sam-rivera-dev
 
 Summary: Analyst orchestrating AI systems for local businesses.
 
