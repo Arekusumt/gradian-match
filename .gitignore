@@ -7,3 +7,4 @@ venv/
 tmp/
 *.pdf
 !tests/fixtures/*.pdf
+!docs/*.pdf

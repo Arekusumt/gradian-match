@@ -1,0 +1,87 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><style>
+  :root{--ink:#0B1220;--indigo:#4338CA;--indigob:#6366F1;--teal:#0F766E;--tealb:#2DD4BF;--violet:#7C3AED;--amber:#B45309;--muted:#5A6675;--line:#E2E1DB}
+  @page{size:A4;margin:15mm 16mm}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:"Segoe UI",system-ui,Arial,sans-serif;color:#1a1f2b;font-size:11pt;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .head{display:flex;align-items:center;gap:12px;border-bottom:3px solid var(--ink);padding-bottom:12px}
+  .head svg{width:38px;height:38px}
+  .head h1{font-size:22pt;letter-spacing:-.01em}
+  .head .k{margin-left:auto;font-size:9pt;color:var(--muted);text-align:right}
+  .lead{font-size:12pt;color:#334155;margin:14px 0 4px}
+  .rule{height:3px;background:linear-gradient(90deg,var(--tealb),var(--indigob));border-radius:2px;margin:6px 0 14px}
+  h2{font-size:12pt;text-transform:uppercase;letter-spacing:.08em;color:var(--indigo);margin:18px 0 7px}
+  h2 .n{font-family:"Segoe UI";color:var(--tealb);margin-right:6px}
+  p{margin:6px 0}
+  .diagram{width:100%;border:2.5px solid var(--ink);border-radius:10px;margin:6px 0 4px;display:block}
+  .cap{font-size:8.5pt;color:var(--muted);text-align:center;margin-bottom:6px}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:10pt}
+  th,td{border:1.5px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:#F4F3EE;text-transform:uppercase;font-size:8.5pt;letter-spacing:.06em;color:var(--muted)}
+  td b{color:var(--ink)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  .card{border:2px solid var(--ink);border-radius:9px;padding:10px 12px}
+  .card h3{font-size:11pt;margin-bottom:3px}
+  .pill{display:inline-block;font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border:1.5px solid var(--ink);border-radius:5px;padding:1px 6px;vertical-align:1px}
+  .teal{background:#CFF7EF}.viol{background:#EDE3FF}.amber{background:#FDECC8}
+  ul{margin:5px 0 5px 16px;padding:0}li{margin:2px 0}
+  .foot{border-top:2px solid var(--ink);margin-top:20px;padding-top:8px;font-size:8.5pt;color:var(--muted);display:flex;justify-content:space-between}
+  .foot b{color:var(--indigo)}
+  code{font-family:"Consolas",monospace;font-size:9pt;background:#F4F3EE;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+  .wip{background:#FDECC8;border:1.5px solid var(--ink);border-radius:5px;padding:0 6px;font-weight:700}
+</style></head><body>
+  <div class="head">
+    <svg viewBox="0 0 100 100"><defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="24" y1="76" x2="80" y2="26"><stop offset="0" stop-color="#2DD4BF"/><stop offset="1" stop-color="#6366F1"/></linearGradient></defs><circle cx="24" cy="76" r="6.2" fill="none" stroke="url(#g)" stroke-width="3.4"/><g fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><line x1="35" y1="66" x2="80" y2="26"/><path d="M62.5 30.3 L80 26 L73.7 42.9"/></g></svg>
+    <h1>Gradian Match</h1>
+    <div class="k">How it works · v2 <span class="wip">work in progress</span><br>gradiangrowth.com</div>
+  </div>
+
+  <p class="lead">A local, agentic tool that reads a CV and a job offer and tells you — explainably — how well they fit, then rewrites the CV to fit better. It works from both sides of the table: the <b>Applier</b> (job-seeker) and the <b>Recruiter</b> (hiring).</p>
+  <div class="rule"></div>
+  <p>Everything runs on your own machine and on <b>your own AI account</b>. Nothing is stored; nothing leaves your computer except the calls you make to your AI and to the job boards you switch on. It is not a website you log into — it's an app you run.</p>
+
+  <h2><span class="n">01</span> The machine at a glance</h2>
+  <img class="diagram" src="system-map.png" alt="Gradian Match system map">
+  <div class="cap">One AI door (two swappable backends) · a deterministic core that needs no AI · an office of agents, two of which run in a quality loop.</div>
+
+  <h2><span class="n">02</span> The two modes</h2>
+  <div class="two">
+    <div class="card"><h3>Applier <span class="pill teal">job-seeker</span></h3>
+      <ul><li><b>Analyze</b> — an explainable compatibility score: ATS keyword coverage, recruiter gating (languages, years), and the AI's semantic read, each shown separately so you see <i>why</i>.</li>
+      <li><b>Find offers</b> across free job boards, or paste one link.</li>
+      <li><b>Regenerate</b> — rewrites your CV for a specific offer with a 1–100 aggressiveness slider, then hands you an ATS-safe PDF.</li></ul></div>
+    <div class="card"><h3>Recruiter <span class="pill viol">hiring</span></h3>
+      <ul><li><b>Screen &amp; rank</b> a batch of candidate CVs against one role.</li>
+      <li><b>AI-writing signals</b> — heuristics + a reading model flag likely AI-written CVs (as <i>signals, never proof</i>).</li>
+      <li><b>Verify sources</b> — checks that links and GitHub repos are real.</li>
+      <li><b>Source candidates</b> legally — GitHub search + a Google/LinkedIn X-ray string you run yourself.</li></ul></div>
+  </div>
+
+  <h2><span class="n">03</span> The office of agents</h2>
+  <table>
+    <tr><th>Agent</th><th>Side</th><th>What it does</th></tr>
+    <tr><td><b>Analyst</b></td><td>both</td><td>Reads the offer + CV, extracts the requirements, and produces the explainable report.</td></tr>
+    <tr><td><b>Tailor</b></td><td>applier</td><td>Rewrites the CV at the slider's aggressiveness. Anything it adds beyond your real CV is written to the truth-ledger.</td></tr>
+    <tr><td><b>Critic</b></td><td>applier</td><td>Scores each rewrite and enforces the gate: any un-ledgered claim fails it.</td></tr>
+    <tr><td><b>Examiner</b></td><td>recruiter</td><td>Judges AI-writing likelihood (Low / Medium / High) with evidence — a signal, not a verdict.</td></tr>
+    <tr><td><b>Verifier</b></td><td>recruiter</td><td>Confirms links and GitHub repositories exist (owner, stars, last commit).</td></tr>
+    <tr><td><b>Sourcer</b></td><td>recruiter</td><td>Turns a role into a GitHub search and an X-ray string for consent-based sourcing.</td></tr>
+  </table>
+
+  <h2><span class="n">04</span> The quality loop <span class="pill amber">the heart of it</span></h2>
+  <p>The Applier's rewrite is not one shot. The <b>Tailor</b> writes a version; the <b>Critic</b> grades it against a rubric — keyword coverage, readability, ATS-parseability, and <b>truthfulness</b> as a hard gate. If it doesn't pass (target ≥ 85), the Critic's feedback goes back to the Tailor and it tries again — up to three passes, keeping the best. The same philosophy as the rest of Gradian's factory: nothing ships below the bar.</p>
+  <p><b>Truth-locked.</b> The slider can be aggressive, but every claim it adds beyond your source CV lands in the <b>truth-ledger</b> — "⚠ verify before sending" — so you never walk into an interview not knowing what your own CV says.</p>
+
+  <h2><span class="n">05</span> How you connect your AI — two ways</h2>
+  <div class="two">
+    <div class="card"><h3>Claude Code <span class="pill teal">default · no key</span></h3>
+      <p>Install Claude Code and sign in. Gradian Match calls it under the hood on your subscription. Nothing to buy, nothing to paste.</p></div>
+    <div class="card"><h3>Anthropic API key <span class="pill viol">faster</span></h3>
+      <p>Put <code>ANTHROPIC_API_KEY</code> in <code>.env</code>. This talks to the API directly — lighter and faster per call than the CLI, ideal for the multi-call rewrite loop.</p></div>
+  </div>
+  <p style="margin-top:8px">Either way it is <b>local and self-hosted</b>. There is deliberately <b>no hosted version</b>: CVs are personal data, and keeping them on your machine is the whole point. The tool uses <b>no MCP servers</b> — it reaches the AI directly through the CLI or the SDK.</p>
+
+  <h2><span class="n">06</span> Privacy &amp; honesty</h2>
+  <p>Everything is in-memory per session; temporary files are deleted; the server binds to <code>127.0.0.1</code> only and rejects cross-origin requests. In recruiter mode you process third parties' data — the legal basis is yours, and the tool holds nothing. The AI-signal flags are explicitly <b>signals, not proof</b>: don't auto-reject anyone on them.</p>
+
+  <div class="foot"><span>Built by <b>Gradian — Digital Growth</b> · gradiangrowth.com</span><span>Gradian Match · source-available · © Gradian</span></div>
+</body></html>
