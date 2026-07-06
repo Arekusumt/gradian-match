@@ -6,14 +6,16 @@ from functools import wraps
 
 import httpx
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.background import BackgroundTask
 from pydantic import BaseModel
 
 from gradianmatch import config
-from gradianmatch.claude_client import ClaudeClient, ClaudeError
+from gradianmatch.claude_client import ClaudeError
+from gradianmatch.ai_client import build_ai_client, describe_backend
+from gradianmatch.events import EventStream, agent_event
 from gradianmatch.skills_taxonomy import SkillTaxonomy
 from gradianmatch.extract import extract_text
 from gradianmatch.render_pdf import render_pdf
@@ -30,8 +32,16 @@ _TAX = SkillTaxonomy()
 _CFG = config.load_config()
 
 
-def get_claude() -> ClaudeClient:  # patched in tests
-    return ClaudeClient()
+def get_claude():  # patched in tests; picks the API or Claude Code backend from config
+    return build_ai_client(_CFG)
+
+
+def _sse(worker) -> StreamingResponse:
+    """Run a blocking ``worker(emit)`` in a thread and stream its events as SSE."""
+    stream = EventStream()
+    stream.run_in_thread(worker)
+    return StreamingResponse(stream.sse(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 def _http() -> httpx.Client:
@@ -141,7 +151,7 @@ def _report_to_json(rep: CompatibilityReport) -> dict:
 @app.get("/api/health")
 def health():
     ok, msg = get_claude().check_available()
-    return {"claude_ok": ok, "message": msg}
+    return {"claude_ok": ok, "message": msg, "backend": describe_backend(_CFG)}
 
 
 @app.get("/api/platforms")
@@ -164,6 +174,47 @@ def api_regenerate(req: RegenReq):
     return {"resume": resume_to_dict(out.resume),
             "ledger": [l.__dict__ for l in out.ledger],
             "critic_score": out.critic_score, "iterations": out.iterations, "passed": out.passed}
+
+
+@app.post("/api/analyze/stream")
+def api_analyze_stream(req: AnalyzeReq):
+    """Same result as /api/analyze, but streams a live 'which agent is doing what'
+    feed + progress so the UI can render the agentic-OS console."""
+    def worker(emit):
+        emit({"type": "start", "run": "analyze", "agents": [
+            {"id": "extract", "name": "Extractor", "desc": "reads your CV and the offer"},
+            {"id": "analyst", "name": "Analyst", "desc": "scores the compatibility"}]})
+        emit(agent_event("extract", "running", "Reading your CV and the offer", 8))
+        cv_text, offer_text = _text(req.cv), _text(req.offer)
+        emit(agent_event("extract", "done", "Text extracted", 22))
+        emit(agent_event("analyst", "running", "Comparing your profile against the offer", 35))
+        res = analyze(cv_text, offer_text, get_claude(), _TAX)
+        emit(agent_event("analyst", "done", f"Compatibility {res.report.overall}%", 95))
+        emit({"type": "result", "data": _report_to_json(res.report)})
+    return _sse(worker)
+
+
+@app.post("/api/regenerate/stream")
+def api_regenerate_stream(req: RegenReq):
+    """Streams the full Tailor↔Critic loop live (fixes the opaque wait that read as a crash)."""
+    def worker(emit):
+        emit({"type": "start", "run": "regenerate", "agents": [
+            {"id": "extract", "name": "Extractor", "desc": "reads your CV and the offer"},
+            {"id": "analyst", "name": "Analyst", "desc": "extracts the offer's requirements"},
+            {"id": "tailor", "name": "Tailor", "desc": "rewrites your CV to fit"},
+            {"id": "critic", "name": "Critic", "desc": "scores it and guards the truth-ledger"}]})
+        emit(agent_event("extract", "running", "Reading your CV and the offer", 6))
+        cv_text, offer_text = _text(req.cv), _text(req.offer)
+        emit(agent_event("extract", "done", "Text extracted", 15))
+        emit(agent_event("analyst", "running", "Extracting the offer's requirements", 22))
+        res = analyze(cv_text, offer_text, get_claude(), _TAX)
+        emit(agent_event("analyst", "done", "Requirements mapped", 35))
+        out = regenerate(res.cv, res.offer, req.aggressiveness, get_claude(), emit=emit)
+        emit({"type": "result", "data": {
+            "resume": resume_to_dict(out.resume),
+            "ledger": [l.__dict__ for l in out.ledger],
+            "critic_score": out.critic_score, "iterations": out.iterations, "passed": out.passed}})
+    return _sse(worker)
 
 
 @app.post("/api/jobs")

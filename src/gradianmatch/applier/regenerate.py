@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import yaml
 from gradianmatch import config
+from gradianmatch.events import agent_event, noop
 from gradianmatch.resume_model import Resume, resume_from_dict, resume_to_dict
 from gradianmatch.scoring import OfferReqs
 
@@ -47,13 +48,18 @@ def _offer_json(offer: OfferReqs) -> str:
     return json.dumps(offer.__dict__, ensure_ascii=False)
 
 def regenerate(cv: Resume, offer: OfferReqs, aggressiveness: int, claude,
-               rubric_path=None) -> RegenResult:
+               rubric_path=None, emit=noop) -> RegenResult:
     rub = _rubric(rubric_path)
     target, max_iter = rub.get("target_score", 85), rub.get("max_iterations", 3)
     cv_json = json.dumps(resume_to_dict(cv), ensure_ascii=False)
     feedback: list[str] = []
     best = None
+    # The regenerate phase spans ~35–95% of the overall bar (analyze took the first ~35%).
+    base, span = 35, 60
+    per = span / max_iter
     for i in range(1, max_iter + 1):
+        emit(agent_event("tailor", "running", f"Rewriting your CV — pass {i} of {max_iter}",
+                         round(base + (i - 1) * per + per * 0.15)))
         tprompt = _fill("tailor.md", **{"<<<CV>>>": cv_json, "<<<OFFER>>>": _offer_json(offer),
                         "<<<AGG>>>": str(aggressiveness),
                         "<<<FEEDBACK>>>": json.dumps(feedback, ensure_ascii=False)})
@@ -67,7 +73,10 @@ def regenerate(cv: Resume, offer: OfferReqs, aggressiveness: int, claude,
                 ledger.append(LedgerItem(
                     claim=str(item.get("claim", "")), location=str(item.get("location", "")),
                     why=str(item.get("why", "")), grounded=bool(item.get("grounded", False))))
+        emit(agent_event("tailor", "done", f"Pass {i}: draft ready", round(base + (i - 1) * per + per * 0.5)))
 
+        emit(agent_event("critic", "running", f"Scoring & truth-checking — pass {i}",
+                         round(base + (i - 1) * per + per * 0.65)))
         cprompt = _fill("critic.md", **{"<<<RUBRIC>>>": json.dumps(rub), "<<<OFFER>>>": _offer_json(offer),
                         "<<<CV>>>": cv_json, "<<<TAILORED>>>": json.dumps(resume_to_dict(tailored), ensure_ascii=False),
                         "<<<LEDGER>>>": json.dumps([l.__dict__ for l in ledger], ensure_ascii=False)})
@@ -81,6 +90,9 @@ def regenerate(cv: Resume, offer: OfferReqs, aggressiveness: int, claude,
         candidate = RegenResult(tailored, ledger, score, i, passed, feedback)
         if best is None or score >= best.critic_score:
             best = candidate
+        emit(agent_event("critic", "done", f"Pass {i}: Critic score {score}/100"
+                         + ("  ✓ passed" if (passed and score >= target) else ""),
+                         round(base + i * per)))
         if passed and score >= target:
             return candidate
     return best

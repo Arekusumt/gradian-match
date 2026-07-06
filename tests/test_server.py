@@ -99,6 +99,37 @@ def test_upload_text_returns_extracted_text(monkeypatch):
     assert r.status_code == 200 and "Python" in r.json()["text"]
 
 
+def test_analyze_stream_emits_agents_and_result(monkeypatch):
+    c = make_client(monkeypatch)
+    with c.stream("POST", "/api/analyze/stream",
+                  json={"cv": {"kind": "text", "value": "Python analyst"},
+                        "offer": {"kind": "text", "value": "Need Python and Power BI"}}) as r:
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/event-stream")
+        body = "".join(r.iter_text())
+    assert '"type": "start"' in body
+    assert '"agent": "analyst"' in body
+    assert '"type": "result"' in body
+    assert '"type": "done"' in body
+
+
+def test_regenerate_stream_runs_loop(monkeypatch):
+    c = make_client(monkeypatch)
+    with c.stream("POST", "/api/regenerate/stream",
+                  json={"cv": {"kind": "text", "value": "Python"},
+                        "offer": {"kind": "text", "value": "Need Python"}, "aggressiveness": 60}) as r:
+        assert r.status_code == 200
+        body = "".join(r.iter_text())
+    assert '"agent": "tailor"' in body and '"agent": "critic"' in body
+    assert '"type": "result"' in body
+
+
+def test_health_reports_backend(monkeypatch):
+    c = make_client(monkeypatch)
+    b = c.get("/api/health").json()
+    assert "backend" in b and b["backend"]["backend"] in ("cli", "api")
+
+
 def test_pdf_endpoint(monkeypatch):
     from gradianmatch.render_pdf import find_chrome
     if find_chrome() is None:
