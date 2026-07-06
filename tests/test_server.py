@@ -124,6 +124,43 @@ def test_regenerate_stream_runs_loop(monkeypatch):
     assert '"type": "result"' in body
 
 
+def test_recruiter_rank_returns_scored_rows(monkeypatch):
+    c = make_client(monkeypatch)
+    r = c.post("/api/recruiter/rank", json={"offer": "Need Python and Power BI",
+               "candidates": [{"name": "Ana", "cv_text": "Python SQL analyst"},
+                              {"name": "Ben", "cv_text": "Python developer"}]})
+    assert r.status_code == 200
+    rows = r.json()
+    assert len(rows) == 2
+    assert all("score" in x and "ai" in x and x["ai"]["band"] in ("Low", "Medium", "High") for x in rows)
+    assert rows[0]["score"] >= rows[1]["score"]  # sorted DESC
+
+
+def test_recruiter_rank_stream(monkeypatch):
+    c = make_client(monkeypatch)
+    with c.stream("POST", "/api/recruiter/rank/stream",
+                  json={"offer": "Need Python", "candidates": [{"name": "Ana", "cv_text": "Python"}]}) as r:
+        assert r.status_code == 200
+        body = "".join(r.iter_text())
+    assert '"agent": "analyst"' in body and '"type": "result"' in body
+
+
+def test_recruiter_signals(monkeypatch):
+    c = make_client(monkeypatch)
+    r = c.post("/api/recruiter/signals", json={"cv_text": "Results-driven professional passionate about synergy"})
+    assert r.status_code == 200 and r.json()["band"] in ("Low", "Medium", "High")
+
+
+def test_recruiter_search_xray(monkeypatch):
+    c = make_client(monkeypatch)
+    monkeypatch.setattr(server, "github_search", lambda criteria, http, cfg=None: [])
+    r = c.post("/api/recruiter/search", json={"criteria": {"keywords": ["data analyst"]},
+               "role": "data analyst", "location": "Barcelona", "site": "linkedin"})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["github"] == [] and "linkedin.com/in" in b["xray"] and "data analyst" in b["xray"]
+
+
 def test_health_reports_backend(monkeypatch):
     c = make_client(monkeypatch)
     b = c.get("/api/health").json()

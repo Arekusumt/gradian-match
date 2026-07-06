@@ -26,6 +26,8 @@ from gradianmatch.applier.regenerate import regenerate
 from gradianmatch.applier.jobs_search import find_jobs
 from gradianmatch.platforms import list_platforms
 from gradianmatch.verify_sources import verify_sources
+from gradianmatch.recruiter.ai_signals import ai_signals
+from gradianmatch.recruiter.talent_search import github_search, xray_query
 
 app = FastAPI(title="Gradian Match")
 _TAX = SkillTaxonomy()
@@ -231,6 +233,102 @@ def api_verify(req: Source):
     text = _text(req)
     with _http() as http:
         return [r.__dict__ for r in verify_sources(text, http)]
+
+
+# ── Recruiter (candidate screening) ───────────────────────────────────────────
+class _Cand(BaseModel):
+    name: str = ""
+    cv_text: str = ""
+
+
+class RankReq(BaseModel):
+    offer: str = ""
+    candidates: list[_Cand] = []
+
+
+class SignalsReq(BaseModel):
+    cv_text: str = ""
+
+
+class SearchReq(BaseModel):
+    criteria: dict = {}
+    role: str = ""
+    location: str = ""
+    site: str = "linkedin"
+
+
+def _screen(offer_text: str, cand: _Cand, http) -> dict:
+    """Score one candidate + heuristic AI-signal band + live-link verification."""
+    res = analyze(cand.cv_text, offer_text, get_claude(), _TAX)
+    rep = res.report
+    sig = ai_signals(cand.cv_text, None, claude=None)  # fast heuristic band for the table
+    sources = [s.__dict__ for s in verify_sources(cand.cv_text, http)]
+    return {"name": cand.name, "score": rep.overall,
+            "matched": rep.matched_keywords, "missing": rep.missing_keywords,
+            "ai": {"band": sig.band, "score_0_100": sig.score_0_100,
+                   "evidence": sig.evidence, "disclaimer": sig.disclaimer},
+            "sources": sources}
+
+
+@app.post("/api/recruiter/rank")
+@_guarded
+def api_recruiter_rank(req: RankReq):
+    rows = []
+    with _http() as http:
+        for c in req.candidates:
+            try:
+                rows.append(_screen(req.offer, c, http))
+            except Exception:  # noqa: BLE001 — one bad CV must not kill the batch
+                continue
+    rows.sort(key=lambda r: r["score"], reverse=True)
+    return rows
+
+
+@app.post("/api/recruiter/rank/stream")
+def api_recruiter_rank_stream(req: RankReq):
+    def worker(emit):
+        n = len(req.candidates)
+        emit({"type": "start", "run": "recruiter", "agents": [
+            {"id": "analyst", "name": "Analyst", "desc": "scores each candidate vs the offer"},
+            {"id": "examiner", "name": "Examiner", "desc": "flags AI-writing signals"},
+            {"id": "verifier", "name": "Verifier", "desc": "checks links & GitHub repos"}]})
+        rows, flagged = [], 0
+        with _http() as http:
+            for i, c in enumerate(req.candidates, 1):
+                pct = round(i / max(1, n) * 90)
+                who = c.name or f"candidate {i}"
+                emit(agent_event("analyst", "running", f"Screening {who} — {i} of {n}", pct))
+                try:
+                    row = _screen(req.offer, c, http)
+                    rows.append(row)
+                    if row["ai"]["band"] != "Low":
+                        flagged += 1
+                    emit(agent_event("analyst", "done", f"{who}: {row['score']}% match", pct))
+                except Exception as e:  # noqa: BLE001
+                    emit(agent_event("analyst", "error", f"{who}: skipped ({e})", pct))
+        emit(agent_event("examiner", "done",
+                         f"{flagged} of {len(rows)} show elevated AI-writing signals", 95))
+        emit(agent_event("verifier", "done", f"Links & repos checked across {len(rows)} CVs", 98))
+        rows.sort(key=lambda r: r["score"], reverse=True)
+        emit({"type": "result", "data": rows})
+    return _sse(worker)
+
+
+@app.post("/api/recruiter/signals")
+@_guarded
+def api_recruiter_signals(req: SignalsReq):
+    sig = ai_signals(req.cv_text, None, claude=get_claude())
+    return {"band": sig.band, "score_0_100": sig.score_0_100, "evidence": sig.evidence,
+            "heuristics": sig.heuristics, "disclaimer": sig.disclaimer}
+
+
+@app.post("/api/recruiter/search")
+@_guarded
+def api_recruiter_search(req: SearchReq):
+    with _http() as http:
+        gh = [c.__dict__ for c in github_search(req.criteria or {}, http, _CFG)]
+    role = req.role or " ".join(str(k) for k in (req.criteria or {}).get("keywords", []) or [])
+    return {"github": gh, "xray": xray_query(role, req.location, req.site or "linkedin")}
 
 
 class PdfReq(BaseModel):
