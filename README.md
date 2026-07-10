@@ -84,6 +84,7 @@ a producer ↔ critic loop with a numeric quality gate, and a human making the f
 | **[gradian-sistema](https://github.com/Arekusumt/gradian-sistema)** | The factory: an interactive map of the 28-agent office, with measured usage numbers. *The system.* |
 | **[gradian-caso-waterfront](https://github.com/Arekusumt/gradian-caso-waterfront)** | A finished piece from that factory: a real pub's website, live in production, explained from the paper menus to deploy. *The result.* |
 | **gradian-match** (you are here) | The same pattern transferred to another domain: CV ↔ job-offer analysis. *The pattern, transferred.* |
+| **[gueridon](https://github.com/Arekusumt/gueridon)** | Menu-engineering science + a **[live](https://gueridon.vercel.app)** menu analyzer: tested deterministic core, agentic shell with per-stage fallback. *The product.* |
 
 ## License
 
