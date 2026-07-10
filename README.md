@@ -74,6 +74,17 @@ The tailoring slider can *emphasize* your real experience aggressively, but the 
 - All AI goes through one door — `ai_client` → Claude Code CLI **or** the Anthropic SDK.
 - Run the tests: `pip install -r requirements-dev.txt` then `python -m pytest`.
 
+## The Gradian ecosystem
+
+This tool applies the same production pattern as the rest of Gradian — narrow specialist agents,
+a producer ↔ critic loop with a numeric quality gate, and a human making the final call:
+
+| Repo | What it shows |
+|---|---|
+| **[gradian-sistema](https://github.com/Arekusumt/gradian-sistema)** | The factory: an interactive map of the 28-agent office, with measured usage numbers. *The system.* |
+| **[gradian-caso-waterfront](https://github.com/Arekusumt/gradian-caso-waterfront)** | A finished piece from that factory: a real pub's website, live in production, explained from the paper menus to deploy. *The result.* |
+| **gradian-match** (you are here) | The same pattern transferred to another domain: CV ↔ job-offer analysis. *The pattern, transferred.* |
+
 ## License
 
 **Source-available, not open source.** © Gradian. All rights reserved — see [`LICENSE`](LICENSE). You may read and run it locally for personal, non-commercial use; redistribution, commercial use, and derivative distribution require written permission. Questions: **alex@gradiangrowth.com**.
